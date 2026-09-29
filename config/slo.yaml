@@ -7,7 +7,13 @@ primary_slo:
     total_event: 'event == "request_received"'
   target_percent: 99.5
   error_budget_percent: 0.5
-  note: Học viên phải giải thích hoặc điều chỉnh ngưỡng bằng baseline của mình.
+  error_budget:
+    formula: allowed_bad_events = total_events * 0.005
+    example_total_events: 10000
+    example_allowed_bad_events: 50
+  rationale: >-
+    Mục tiêu 99.5% giữ tail latency của request thành công dưới 3 giây,
+    đồng thời cho phép tối đa 0.5% request lỗi hoặc chậm trong cửa sổ 28 ngày.
 guardrails:
   error_rate_pct_max: 2
   daily_cost_usd_max: 2.5

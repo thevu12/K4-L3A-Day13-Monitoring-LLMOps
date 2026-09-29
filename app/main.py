@@ -1,18 +1,22 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from structlog.contextvars import bind_contextvars
 
 from .agent import LabAgent
+from .dashboard import build_dashboard_payload, build_logs_payload
 from .incidents import disable, enable, status
 from .logging_config import configure_logging, get_logger
 from .metrics import record_error, snapshot
 from .middleware import CorrelationIdMiddleware
-from .pii import hash_user_id, summarize_text
+from .pii import hash_user_id, scrub_text, summarize_text
 from .schemas import ChatRequest, ChatResponse
 from .tracing import tracing_enabled
 
@@ -34,6 +38,35 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title="Day 13 Monitoring & LLMOps Lab", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def demo() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/api/dashboard", include_in_schema=False)
+def dashboard_data(minutes: int = 60) -> dict:
+    return build_dashboard_payload(minutes)
+
+
+@app.get("/api/logs", include_in_schema=False)
+def logs_data(
+    limit: int = 100,
+    query: str = "",
+    correlation_id: str = "",
+    event: str = "",
+    level: str = "",
+) -> dict:
+    return build_logs_payload(
+        limit=limit,
+        query=query,
+        correlation_id=correlation_id,
+        event=event,
+        level=level,
+    )
 
 
 @app.get("/health")
@@ -48,9 +81,16 @@ async def metrics() -> dict:
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
-    # TODO: Enrich logs with request context (user_id_hash, session_id, feature, model, env)
-    # bind_contextvars(...)
-    
+    safe_session_id = scrub_text(body.session_id)
+    safe_feature = scrub_text(body.feature)
+    bind_contextvars(
+        user_id_hash=hash_user_id(body.user_id),
+        session_id=safe_session_id,
+        feature=safe_feature,
+        model=agent.model,
+        env=os.getenv("APP_ENV", "dev"),
+    )
+
     log.info(
         "request_received",
         service="api",
@@ -59,8 +99,8 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     try:
         result = agent.run(
             user_id=body.user_id,
-            feature=body.feature,
-            session_id=body.session_id,
+            feature=safe_feature,
+            session_id=safe_session_id,
             message=body.message,
             correlation_id=request.state.correlation_id,
         )

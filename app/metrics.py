@@ -47,6 +47,10 @@ def percentile(values: list[int], p: int) -> float:
 
 
 def snapshot() -> dict:
+    error_count = sum(ERRORS.values())
+    total_requests = TRAFFIC + error_count
+    retrieval_failures = ERRORS.get("RuntimeError", 0)
+    retrieval_attempts = TRAFFIC + retrieval_failures
     return {
         "traffic": TRAFFIC,
         "latency_p50": percentile(REQUEST_LATENCIES, 50),
@@ -58,5 +62,9 @@ def snapshot() -> dict:
         "tokens_in_total": sum(REQUEST_TOKENS_IN),
         "tokens_out_total": sum(REQUEST_TOKENS_OUT),
         "error_breakdown": dict(ERRORS),
+        "error_rate_pct": round((error_count / total_requests) * 100, 2) if total_requests else 0.0,
+        "retrieval_success_rate_pct": round((TRAFFIC / retrieval_attempts) * 100, 2)
+        if retrieval_attempts
+        else 0.0,
         "quality_avg": round(mean(QUALITY_SCORES), 4) if QUALITY_SCORES else 0.0,
     }

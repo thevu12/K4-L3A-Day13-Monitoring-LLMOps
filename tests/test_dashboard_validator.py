@@ -32,6 +32,14 @@ def test_repository_dashboard_contract_is_valid() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     assert "6/6 panel" in result.stdout
 
+    payload = yaml.safe_load(
+        (REPO_ROOT / "config" / "dashboard.yaml").read_text(encoding="utf-8")
+    )
+    error_panel = next(
+        panel for panel in payload["dashboard"]["panels"] if panel["id"] == "errors"
+    )
+    assert "response_sent" in error_panel["events"]
+
 
 def test_validator_rejects_panel_without_threshold(tmp_path: Path) -> None:
     payload = yaml.safe_load(

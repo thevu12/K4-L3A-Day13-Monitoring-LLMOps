@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6f8">
+    <title>LLMOps Control Room</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script defer src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" integrity="sha384-uTYyvsSSUZeaPhb5RbKlQa0zY/WpX/QHfvg2mczXyBQOpkWPEDy9lczyp+w7SKXu" crossorigin="anonymous"></script>
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div>
+            <strong>LLMOps</strong>
+            <span>Control room</span>
+          </div>
+        </div>
+        <div class="workspace-switcher">
+          <span class="workspace-dot"></span>
+          <div><small>Workspace</small><strong>Day 13 Lab</strong></div>
+          <i data-lucide="chevrons-up-down" aria-hidden="true"></i>
+        </div>
+        <nav class="side-nav">
+          <button class="side-nav-item is-active" data-view-target="overview" type="button">
+            <i data-lucide="layout-dashboard" aria-hidden="true"></i><span>Overview</span>
+          </button>
+          <button class="side-nav-item" data-view-target="requests" type="button">
+            <i data-lucide="list-filter" aria-hidden="true"></i><span>Requests</span>
+          </button>
+          <button class="side-nav-item" data-view-target="playground" type="button">
+            <i data-lucide="flask-conical" aria-hidden="true"></i><span>Live test</span>
+          </button>
+          <button class="side-nav-item" data-view-target="runbooks" type="button">
+            <i data-lucide="book-open-check" aria-hidden="true"></i><span>Runbooks</span>
+          </button>
+        </nav>
+        <div class="sidebar-foot">
+          <div class="foot-row"><span class="status-dot status-dot-good"></span><span>API reachable</span></div>
+          <div class="foot-row muted"><i data-lucide="shield-check" aria-hidden="true"></i><span>PII guard enabled</span></div>
+          <a href="/docs" target="_blank" rel="noreferrer" class="docs-link"><i data-lucide="external-link" aria-hidden="true"></i><span>Open API docs</span></a>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>Workspace</span><i data-lucide="chevron-right" aria-hidden="true"></i><strong>Monitoring overview</strong></div>
+          <div class="topbar-actions">
+            <div class="env-indicator"><span class="status-dot status-dot-good"></span><span>DEV</span><b id="tracing-state">Tracing off</b></div>
+            <button class="icon-button" id="refresh-button" type="button" title="Refresh dashboard" aria-label="Refresh dashboard"><i data-lucide="refresh-cw" aria-hidden="true"></i></button>
+            <div class="avatar" title="Local operator">LO</div>
+          </div>
+        </header>
+
+        <div class="content-wrap">
+          <section class="intro-row" aria-labelledby="page-title">
+            <div>
+              <p class="eyebrow">OBSERVABILITY / LAST 60 MINUTES</p>
+              <h1 id="page-title">LLMOps control room</h1>
+              <p class="intro-copy">A live view of latency, reliability, spend and answer quality across the lab API.</p>
+            </div>
+            <div class="intro-meta">
+              <span class="live-chip"><span class="pulse-dot"></span>Local data stream</span>
+              <span id="last-updated">Waiting for first refresh</span>
+            </div>
+          </section>
+
+          <div class="view-tabs" role="tablist" aria-label="Control room views">
+            <button class="view-tab is-active" id="tab-overview" data-view-target="overview" role="tab" aria-controls="view-overview" aria-selected="true" tabindex="0" type="button">Overview</button>
+            <button class="view-tab" id="tab-requests" data-view-target="requests" role="tab" aria-controls="view-requests" aria-selected="false" tabindex="-1" type="button">Requests</button>
+            <button class="view-tab" id="tab-playground" data-view-target="playground" role="tab" aria-controls="view-playground" aria-selected="false" tabindex="-1" type="button">Live test</button>
+            <button class="view-tab" id="tab-runbooks" data-view-target="runbooks" role="tab" aria-controls="view-runbooks" aria-selected="false" tabindex="-1" type="button">Runbooks</button>
+            <div class="view-actions">
+              <label class="auto-refresh"><input id="auto-refresh" type="checkbox" checked><span>Auto-refresh</span></label>
+              <span class="refresh-note">30s</span>
+            </div>
+          </div>
+
+          <section class="page-view is-visible" id="view-overview" data-view="overview" role="tabpanel" aria-labelledby="tab-overview">
+            <div class="summary-grid" aria-label="Summary metrics">
+              <article class="summary-card"><div class="summary-label"><span>Requests</span><i data-lucide="arrow-up-right" aria-hidden="true"></i></div><strong id="summary-requests">--</strong><span class="summary-detail" id="summary-rate">-- / min</span></article>
+              <article class="summary-card"><div class="summary-label"><span>P95 latency</span><i data-lucide="timer" aria-hidden="true"></i></div><strong id="summary-latency">--</strong><span class="summary-detail">Threshold &lt; 3.0s</span></article>
+              <article class="summary-card"><div class="summary-label"><span>Error rate</span><i data-lucide="triangle-alert" aria-hidden="true"></i></div><strong id="summary-errors">--</strong><span class="summary-detail" id="summary-retrieval">Retrieval --</span></article>
+              <article class="summary-card"><div class="summary-label"><span>Quality proxy</span><i data-lucide="sparkles" aria-hidden="true"></i></div><strong id="summary-quality">--</strong><span class="summary-detail">Target &gt; 0.75</span></article>
+            </div>
+
+            <div class="panel-grid" aria-label="Six monitoring panels">
+              <article class="panel panel-latency">
+                <div class="panel-heading"><div><p class="panel-kicker">PERFORMANCE</p><h2>Latency &amp; TTFT</h2></div><span class="panel-status" id="latency-status">Waiting</span></div>
+                <div class="metric-row metric-row-four"><div><span>P50</span><strong id="latency-p50">--</strong></div><div><span>P95</span><strong id="latency-p95">--</strong></div><div><span>P99</span><strong id="latency-p99">--</strong></div><div><span>TTFT P95</span><strong id="latency-ttft">--</strong></div></div>
+                <div class="chart-wrap"><canvas id="latency-chart" role="img" aria-label="Latency percentile chart">Latency P50, P95, P99 and TTFT values are listed above.</canvas></div>
+                <div class="chart-legend"><span><b class="legend-blue"></b>P95</span><span><b class="legend-teal"></b>P50</span><span><b class="legend-amber"></b>TTFT</span></div>
+              </article>
+
+              <article class="panel panel-traffic">
+                <div class="panel-heading"><div><p class="panel-kicker">VOLUME</p><h2>Request traffic</h2></div><span class="panel-status status-neutral" id="traffic-status">60m</span></div>
+                <div class="metric-row metric-row-two"><div><span>Total requests</span><strong id="traffic-count">--</strong></div><div><span>Requests / min</span><strong id="traffic-rate">--</strong></div></div>
+                <div class="chart-wrap"><canvas id="traffic-chart" role="img" aria-label="Request traffic bar chart">Traffic totals and per-minute rate are listed above.</canvas></div>
+                <p class="panel-footnote"><i data-lucide="info" aria-hidden="true"></i><span>Source: sanitized JSONL logs</span></p>
+              </article>
+
+              <article class="panel panel-errors">
+                <div class="panel-heading"><div><p class="panel-kicker">RELIABILITY</p><h2>Errors &amp; retrieval</h2></div><span class="panel-status" id="errors-status">Healthy</span></div>
+                <div class="reliability-grid"><div class="reliability-ring" id="retrieval-ring"><span id="retrieval-ring-value">--</span><small>retrieval</small></div><div class="reliability-copy"><div><span>Error rate</span><strong id="error-rate-value">--</strong></div><div><span>Failed requests</span><strong id="failed-count">--</strong></div></div></div>
+                <div class="breakdown" id="error-breakdown"><span class="empty-inline">No errors in window</span></div>
+              </article>
+
+              <article class="panel panel-cost">
+                <div class="panel-heading"><div><p class="panel-kicker">EFFICIENCY</p><h2>Cost over time</h2></div><span class="panel-status status-neutral">USD</span></div>
+                <div class="metric-row metric-row-two"><div><span>Total cost</span><strong id="cost-total">--</strong></div><div><span>Daily guardrail</span><strong>$2.50</strong></div></div>
+                <div class="chart-wrap"><canvas id="cost-chart" role="img" aria-label="Cost over time chart">Total cost is listed above.</canvas></div>
+                <p class="panel-footnote"><i data-lucide="wallet-cards" aria-hidden="true"></i><span>Input + output token pricing</span></p>
+              </article>
+
+              <article class="panel panel-tokens">
+                <div class="panel-heading"><div><p class="panel-kicker">USAGE</p><h2>Token volume</h2></div><span class="panel-status status-neutral">tokens</span></div>
+                <div class="metric-row metric-row-two"><div><span>Input</span><strong id="tokens-input">--</strong></div><div><span>Output</span><strong id="tokens-output">--</strong></div></div>
+                <div class="chart-wrap"><canvas id="tokens-chart" role="img" aria-label="Input and output token chart">Input and output token totals are listed above.</canvas></div>
+                <div class="bar-legend"><span><b class="legend-violet"></b>Input context</span><span><b class="legend-orange"></b>Generated output</span></div>
+              </article>
+
+              <article class="panel panel-quality">
+                <div class="panel-heading"><div><p class="panel-kicker">QUALITY PROXY</p><h2>Answer quality</h2></div><span class="panel-status" id="quality-status">Target 0.75</span></div>
+                <div class="quality-display"><strong id="quality-value">--</strong><span>/ 1.00 average</span></div>
+                <div class="quality-track"><span id="quality-fill"></span><i></i></div>
+                <div class="chart-wrap chart-wrap-short"><canvas id="quality-chart" role="img" aria-label="Quality proxy trend chart">The average quality score is listed above.</canvas></div>
+                <p class="panel-footnote"><i data-lucide="gauge" aria-hidden="true"></i><span>Heuristic score from retrieved context and answer match</span></p>
+              </article>
+            </div>
+
+            <div class="lower-grid">
+              <section class="panel request-feed" aria-labelledby="recent-title">
+                <div class="panel-heading"><div><p class="panel-kicker">TRACE BRIDGE</p><h2 id="recent-title">Recent requests</h2></div><button class="text-button" data-view-target="requests" type="button">View all <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div>
+                <div class="table-scroll"><table><thead><tr><th>Correlation ID</th><th>Feature</th><th>Result</th><th>Latency</th><th>Time</th></tr></thead><tbody id="recent-requests-body"><tr><td colspan="5" class="empty-cell">Loading request activity...</td></tr></tbody></table></div>
+              </section>
+              <section class="panel slo-card" aria-labelledby="slo-title">
+                <div class="panel-heading"><div><p class="panel-kicker">SERVICE LEVEL OBJECTIVE</p><h2 id="slo-title">Fast successful requests</h2></div><span class="panel-status status-neutral" id="slo-window">28d</span></div>
+                <div class="slo-value"><strong id="slo-target">99.5%</strong><span>configured target</span></div>
+                <div class="slo-progress"><span id="slo-progress-fill"></span></div>
+                <div class="slo-meta"><span>Error budget <strong id="slo-budget">0.5%</strong></span><span>Good event &lt; 3s</span></div>
+                <div class="slo-callout"><i data-lucide="route" aria-hidden="true"></i><span>Use Metrics → Logs → Traces to localize the next incident.</span></div>
+              </section>
+            </div>
+          </section>
+
+          <section class="page-view" id="view-requests" data-view="requests" role="tabpanel" aria-labelledby="tab-requests" hidden>
+            <div class="section-heading"><div><p class="eyebrow">REQUEST INVESTIGATION</p><h1>Log explorer</h1><p>Filter sanitized events, then carry a correlation ID into your trace tool.</p></div><button class="outline-button" id="clear-log-filters" type="button"><i data-lucide="rotate-ccw" aria-hidden="true"></i>Clear filters</button></div>
+            <div class="filter-bar"><label class="search-field"><i data-lucide="search" aria-hidden="true"></i><input id="log-query" type="search" placeholder="Search event, feature, correlation ID..." autocomplete="off"></label><select id="log-event" aria-label="Filter by event"><option value="">All events</option><option value="request_received">request_received</option><option value="response_sent">response_sent</option><option value="request_failed">request_failed</option></select><select id="log-level" aria-label="Filter by level"><option value="">All levels</option><option value="info">info</option><option value="warning">warning</option><option value="error">error</option></select><span class="filter-count" id="log-count">-- records</span></div>
+            <section class="panel table-panel"><div class="table-scroll"><table class="logs-table"><thead><tr><th>Time</th><th>Event</th><th>Level</th><th>Correlation ID</th><th>Feature</th><th>Latency</th><th>Tool</th><th></th></tr></thead><tbody id="logs-body"><tr><td colspan="8" class="empty-cell">Loading logs...</td></tr></tbody></table></div></section>
+          </section>
+
+          <section class="page-view" id="view-playground" data-view="playground" role="tabpanel" aria-labelledby="tab-playground" hidden>
+            <div class="section-heading"><div><p class="eyebrow">SAFE REQUEST WORKBENCH</p><h1>Run a live test</h1><p>Send a sanitized sample request and follow its metrics back into the log stream.</p></div><span class="live-chip"><span class="pulse-dot"></span>Fake LLM</span></div>
+            <div class="workbench-grid"><section class="panel form-panel"><div class="panel-heading"><div><p class="panel-kicker">REQUEST</p><h2>Chat input</h2></div><i data-lucide="send" aria-hidden="true" class="panel-icon"></i></div><form id="chat-form"><div class="form-grid"><label>User ID<input name="user_id" value="demo-operator" required></label><label>Session ID<input name="session_id" value="demo-session" required></label><label>Feature<select name="feature"><option value="qa">qa</option><option value="summary">summary</option><option value="monitoring">monitoring</option><option value="policy">policy</option></select></label></div><label>Message<textarea name="message" rows="5" required>Explain how metrics, logs and traces work together.</textarea></label><div class="form-actions"><button class="primary-button" type="submit"><i data-lucide="play" aria-hidden="true"></i>Send request</button><span id="chat-status" role="status" aria-live="polite"></span></div></form></section><section class="panel response-panel"><div class="panel-heading"><div><p class="panel-kicker">RESPONSE</p><h2>Request result</h2></div><span class="panel-status status-neutral" id="response-state">Idle</span></div><div id="chat-empty" class="empty-state"><i data-lucide="message-square-dashed" aria-hidden="true"></i><p>Your answer and request telemetry will appear here.</p></div><div id="chat-result" hidden><div class="answer-box" id="chat-answer"></div><div class="response-metrics"><div><span>Correlation ID</span><button class="link-button" id="chat-correlation" type="button">--</button></div><div><span>Latency</span><strong id="chat-latency">--</strong></div><div><span>TTFT</span><strong id="chat-ttft">--</strong></div><div><span>Cost</span><strong id="chat-cost">--</strong></div><div><span>Quality</span><strong id="chat-quality">--</strong></div></div></div></section></div>
+          </section>
+
+          <section class="page-view" id="view-runbooks" data-view="runbooks" role="tabpanel" aria-labelledby="tab-runbooks" hidden>
+            <div class="section-heading"><div><p class="eyebrow">OPERATIONS</p><h1>Alerts &amp; runbooks</h1><p>Symptom-based guardrails connected to the same dashboard signals.</p></div></div>
+            <div class="runbook-grid"><section class="panel"><div class="panel-heading"><div><p class="panel-kicker">ALERT RULES</p><h2>Current alert posture</h2></div><span class="panel-status status-neutral" id="alert-count">--</span></div><div class="alert-list" id="alert-list"><div class="empty-state"><i data-lucide="loader-circle" aria-hidden="true"></i><p>Loading alert rules...</p></div></div></section><section class="panel"><div class="panel-heading"><div><p class="panel-kicker">SLO POLICY</p><h2>Budget guardrails</h2></div><i data-lucide="shield" aria-hidden="true" class="panel-icon"></i></div><div class="guardrail-list"><div><span>Latency P95</span><strong>&lt; 3,000 ms</strong></div><div><span>Error rate</span><strong>&lt; 2%</strong></div><div><span>Retrieval success</span><strong>&gt; 90%</strong></div><div><span>Quality average</span><strong>&gt; 0.75</strong></div><div><span>Daily cost</span><strong>&lt; $2.50</strong></div></div></section></div>
+          </section>
+
+          <footer class="page-footer"><span>Day 13 Monitoring &amp; LLMOps</span><span>Data source: <code>data/logs.jsonl</code></span><span id="footer-health">Local API</span></footer>
+        </div>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
